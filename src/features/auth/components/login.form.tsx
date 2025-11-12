@@ -20,6 +20,15 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
+/**
+ * Render a login form card with email and password fields, social sign-in buttons, and submission handling.
+ *
+ * The component validates input with the defined schema, disables form controls while submitting, and
+ * on submit attempts an email sign-in via the authentication client. On success it shows a success toast
+ * and navigates to the home page; on error it shows an error toast with the provided message.
+ *
+ * @returns A JSX element containing the login UI
+ */
 export function LoginForm() {
     const router = useRouter();
 
