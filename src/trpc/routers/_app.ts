@@ -13,8 +13,9 @@ export const appRouter = createTRPCRouter({
         email: "leonardo@mail.com",
       },
     });
-    return { sucess: true, message: "Workflow criado com sucesso" };
-  }),
+    return { success: true, message: "Workflow criado com sucesso" };
+  }
+),
 });
 // export type definition of API
 export type AppRouter = typeof appRouter;
