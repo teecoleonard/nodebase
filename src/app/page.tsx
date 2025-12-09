@@ -11,6 +11,13 @@ import { toast } from "sonner";
 const Page = () => {
   const trpc = useTRPC();
   const { data } = useQuery(trpc.getWorkflows.queryOptions());
+
+  const testAi = useMutation(trpc.testAi.mutationOptions({
+    onSuccess: () => {
+      toast.success("AI executado com sucesso");
+    }
+  }));
+
   const queryClient = useQueryClient();
   const create = useMutation(trpc.createWorkflow.mutationOptions(
     {
@@ -25,6 +32,7 @@ const Page = () => {
       protected page
       <div>
       {JSON.stringify(data, null, 2)}
+      <Button disabled={testAi.isPending} onClick={() => testAi.mutate()}>Test AI</Button>
       </div>
       <Button disabled={create.isPending} onClick={() => create.mutate()}>Create Workflow</Button>
       <LogoutButton />

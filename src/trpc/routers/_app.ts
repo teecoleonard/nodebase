@@ -1,8 +1,16 @@
 import prisma from '@/lib/db';
 import { createTRPCRouter, protectedProcedure } from '../init';
 import { inngest } from '@/inngest/client';
+import { baseProcedure } from '../init';
 
 export const appRouter = createTRPCRouter({
+  testAi: baseProcedure.mutation(async () => {
+    await inngest.send({
+      name: "execute/ai"
+    });
+
+    return { success: true, message: "AI executado com sucesso" };
+  }),
   getWorkflows: protectedProcedure.query(({ ctx }) => {
     return prisma.workflow.findMany();
   }),
