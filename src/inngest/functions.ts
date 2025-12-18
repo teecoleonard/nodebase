@@ -4,6 +4,7 @@ import { generateText } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 
+
 const google = createGoogleGenerativeAI();
 const openai = createOpenAI();
 const anthropic = createAnthropic();
@@ -19,6 +20,11 @@ export const execute = inngest.createFunction(
         model: google("gemini-2.5-flash"),
         system: "Você é um assistente de IA que gera texto baseado em um prompt. Você é muito inteligente e sempre responde de forma clara e precisa.",
         prompt: "Qual é a capital do Brasil?",
+        experimental_telemetry: {
+        isEnabled: true,
+        recordInputs: true,
+        recordOutputs: true,
+        },
       }
     );
 
@@ -28,6 +34,11 @@ export const execute = inngest.createFunction(
         model: openai("gpt-4"),
         system: "Você é um assistente de IA que gera texto baseado em um prompt. Você é muito inteligente e sempre responde de forma clara e precisa.",
         prompt: "Qual é a capital do Brasil?",
+        experimental_telemetry: {
+        isEnabled: true,
+        recordInputs: true,
+        recordOutputs: true,
+        },
       }
     );
 
@@ -37,6 +48,11 @@ export const execute = inngest.createFunction(
         model: anthropic("claude-sonnet-4-5"),
         system: "Você é um assistente de IA que gera texto baseado em um prompt. Você é muito inteligente e sempre responde de forma clara e precisa.",
         prompt: "Qual é a capital do Brasil?",
+        experimental_telemetry: {
+        isEnabled: true,
+        recordInputs: true,
+        recordOutputs: true,
+        },
       }
     );
 
