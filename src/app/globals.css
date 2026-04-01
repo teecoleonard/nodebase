@@ -175,9 +175,16 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
     font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
     letter-spacing: var(--tracking-normal);
+    background-color: var(--background);
+    background-image:
+      radial-gradient(circle at 10% 20%, color-mix(in oklab, var(--primary) 35%, transparent) 0, transparent 50%),
+      radial-gradient(circle at 90% 10%, color-mix(in oklab, var(--secondary) 35%, transparent) 0, transparent 45%),
+      radial-gradient(circle at 50% 80%, color-mix(in oklab, var(--accent) 30%, transparent) 0, transparent 40%),
+      linear-gradient(135deg, color-mix(in oklab, var(--background), white 4%) 0%, color-mix(in oklab, var(--background), black 2%) 100%);
+    background-attachment: fixed;
   }
   button:not([disabled]),
   [role="button"]:not([disabled]) {
@@ -188,6 +195,73 @@
   }
   .font-serif {
     font-family: var(--font-serif, ui-serif, serif);
+  }
+}
+
+.dark body {
+  background-image:
+    radial-gradient(circle at 15% 15%, color-mix(in oklab, var(--primary) 25%, transparent) 0, transparent 40%),
+    radial-gradient(circle at 80% 0%, color-mix(in oklab, var(--secondary) 20%, transparent) 0, transparent 35%),
+    linear-gradient(135deg, color-mix(in oklab, var(--background), black 8%) 0%, color-mix(in oklab, var(--background), black 2%) 100%);
+}
+
+@layer components {
+  .page-section {
+    @apply rounded-3xl border border-border/60 bg-card/70 p-6 shadow-lg backdrop-blur-xl;
+  }
+
+  .surface-card {
+    @apply relative rounded-3xl border border-border/50 bg-card/85 shadow-lg overflow-hidden;
+    backdrop-filter: blur(8px);
+  }
+
+  .surface-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, color-mix(in oklab, var(--primary) 6%, transparent) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 200ms ease;
+    pointer-events: none;
+  }
+
+  .card-hover {
+    transition: transform 220ms ease, box-shadow 220ms ease;
+  }
+
+  .card-hover:hover {
+    transform: translateY(-6px);
+    box-shadow:
+      0 20px 35px -25px color-mix(in oklab, var(--primary) 60%, black),
+      0 8px 20px -10px color-mix(in oklab, var(--accent) 35%, black);
+  }
+
+  .surface-card.card-hover:hover::after {
+    opacity: 1;
+  }
+
+  .auto-grid {
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+
+  @media (min-width: 1600px) {
+    .auto-grid {
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    }
+  }
+
+  .data-chip {
+    @apply inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-3 py-1 text-xs font-medium text-muted-foreground;
+  }
+
+  .chip-icon {
+    @apply h-3.5 w-3.5 text-primary;
+  }
+
+  .pill-muted {
+    @apply inline-flex items-center gap-1 rounded-full bg-secondary/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-secondary-foreground;
   }
 }
 

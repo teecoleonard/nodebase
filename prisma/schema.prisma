@@ -14,18 +14,26 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  ADMIN
+  USER
+  VIEWER
+}
+
 model User {
   id            String    @id
   name          String
   email         String
   emailVerified Boolean   @default(false)
   image         String?
+  role          UserRole  @default(USER)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @default(now()) @updatedAt
   sessions      Session[]
   accounts      Account[]
 
   @@unique([email])
+  @@index([role])
   @@map("user")
 }
 
@@ -77,4 +85,335 @@ model Verification {
 model Workflow {
   id String @id @default(cuid())
   name String
+}
+
+// ============================================
+// SISTEMA DE LOCAÇÃO DE EQUIPAMENTOS - ALG
+// ============================================
+
+model Cliente {
+  id          Int       @id @default(autoincrement())
+  contratante String    @db.VarChar(100)
+  cpfCnpj     String    @unique @map("cpf_cnpj") @db.VarChar(20)
+  rgIe        String?   @map("rg_ie") @db.VarChar(20)
+  endereco    String?   @db.VarChar(200)
+  bairro      String?   @db.VarChar(100)
+  cep         String?   @db.VarChar(10)
+  cidade      String?   @db.VarChar(100)
+  estado      String?   @db.VarChar(2)
+  telefone    String?   @db.VarChar(20)
+  email       String?   @db.VarChar(255)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  contratos   Contrato[]
+  devolucoes  Devolucao[]
+  faturas     Fatura[]
+
+  @@map("cliente")
+}
+
+model Equipamento {
+  id               Int       @id @default(autoincrement())
+  nomeEquip        String    @db.VarChar(100)
+  precoDiaria      Decimal   @default(0) @db.Decimal(10, 2)
+  precoSemanal     Decimal   @default(0) @db.Decimal(10, 2)
+  precoQuinzenal   Decimal   @default(0) @db.Decimal(10, 2)
+  precoMensal      Decimal   @default(0) @db.Decimal(10, 2)
+  codigoEquip      String?   @db.VarChar(50)
+  quantidadeDisp   Int       @default(0)
+  valorPatrimonio  Decimal?  @db.Decimal(12, 2)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  equipamentosContratos EquipamentoContrato[]
+  devolucoes            Devolucao[]
+
+  @@map("equipamento")
+}
+
+enum StatusAssinatura {
+  PENDENTE
+  ASSINADO
+}
+
+enum StatusContrato {
+  PENDENTE
+  ASSINADO
+  EM_ANDAMENTO
+  DEVOLVIDO_PARCIALMENTE
+  FINALIZADO
+  CANCELADO
+}
+
+enum PeriodoContrato {
+  DIARIA
+  SEMANAL
+  QUINZENAL
+  MENSAL
+}
+
+model Contrato {
+  id                 Int              @id @default(autoincrement())
+  clienteId          Int              @map("cliente_id")
+  contratoNum        String           @map("contrato_num") @db.VarChar(20)
+  dataHoraEmissao    DateTime         @map("data_hora_emissao")
+  dataVenc           DateTime         @map("data_venc") @db.Date
+  obraLocal          String?          @map("obra_local") @db.VarChar(200)
+  contratoPeriodo    PeriodoContrato  @map("contrato_periodo")
+  entregaLocal       String?          @map("entrega_local") @db.VarChar(200)
+  respPedido         String?          @map("resp_pedido") @db.VarChar(100)
+  valorTotal         Decimal          @default(0) @map("valor_total") @db.Decimal(10, 2)
+  statusAssinatura   StatusAssinatura @default(PENDENTE) @map("status_assinatura")
+  statusContrato     StatusContrato   @default(PENDENTE) @map("status_contrato")
+  dataAssinatura     DateTime?        @map("data_assinatura")
+  assinaturaId       Int?             @map("assinatura_id")
+  arquivado          Boolean          @default(false)
+  dataArquivamento   DateTime?        @map("data_arquivamento")
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  cliente               Cliente                @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  assinatura            Assinatura?            @relation(fields: [assinaturaId], references: [id])
+  equipamentos          EquipamentoContrato[]
+  devolucoes            Devolucao[]
+  assinaturasDevolucao  AssinaturaDevolucao[]
+  faturas               FaturaContrato[]
+
+  @@unique([clienteId, contratoNum])
+  @@index([clienteId])
+  @@index([statusContrato])
+  @@index([arquivado])
+  @@map("contrato")
+}
+
+model EquipamentoContrato {
+  id             Int      @id @default(autoincrement())
+  contratoId     Int      @map("contrato_id")
+  equipamentoId  Int      @map("equipamento_id")
+  quantidadeEquip Int     @default(1) @map("quantidade_equip")
+  valorUnitario  Decimal  @default(0) @map("valor_unitario") @db.Decimal(10, 2)
+  valorTotal     Decimal  @default(0) @map("valor_total") @db.Decimal(10, 2)
+  valorFrete     Decimal  @default(0) @map("valor_frete") @db.Decimal(10, 2)
+
+  contrato    Contrato    @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+  equipamento Equipamento @relation(fields: [equipamentoId], references: [id], onDelete: Cascade)
+
+  @@index([contratoId])
+  @@index([equipamentoId])
+  @@map("equipamento_contrato")
+}
+
+model Assinatura {
+  id             Int      @id @default(autoincrement())
+  contratoId     Int?     @map("contrato_id")
+  nomeArquivo    String   @map("nome_arquivo") @db.VarChar(255)
+  dataCriacao    DateTime @default(now()) @map("data_criacao")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  contratos Contrato[]
+
+  @@map("assinatura")
+}
+
+enum StatusItemDevolucao {
+  PENDENTE
+  PARCIAL
+  DEVOLVIDO
+}
+
+model Devolucao {
+  id                       Int                  @id @default(autoincrement())
+  contratoId               Int                  @map("contrato_id")
+  clienteId                Int                  @map("cliente_id")
+  equipamentoId            Int                  @map("equipamento_id")
+  devNum                   String               @map("dev_num") @db.VarChar(255)
+  dataDevolucaoPrevista    DateTime             @map("data_devolucao_prevista") @db.Date
+  dataDevolucaoEfetiva     DateTime?            @map("data_devolucao_efetiva")
+  quantidadeContratada     Int                  @map("quantidade_contratada")
+  quantidadeDevolvida      Int                  @default(0) @map("quantidade_devolvida")
+  statusItemDevolucao      StatusItemDevolucao  @default(PENDENTE) @map("status_item_devolucao")
+  observacaoItemDevolucao  String?              @map("observacao_item_devolucao") @db.Text
+  statusAssinatura         StatusAssinatura     @default(PENDENTE) @map("status_assinatura")
+  dataAssinatura           DateTime?            @map("data_assinatura")
+  createdAt                DateTime             @default(now())
+  updatedAt                DateTime             @updatedAt
+
+  contrato    Contrato    @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+  cliente     Cliente     @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  equipamento Equipamento @relation(fields: [equipamentoId], references: [id], onDelete: Cascade)
+  assinaturas AssinaturaDevolucao[]
+
+  @@index([contratoId])
+  @@index([clienteId])
+  @@index([statusItemDevolucao])
+  @@map("devolucao")
+}
+
+model AssinaturaDevolucao {
+  id             Int      @id @default(autoincrement())
+  devolucaoId    Int      @map("devolucao_id")
+  contratoId     Int      @map("contrato_id")
+  nomeArquivo    String   @map("nome_arquivo") @db.VarChar(255)
+  dataCriacao    DateTime @default(now()) @map("data_criacao")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  devolucao Devolucao @relation(fields: [devolucaoId], references: [id], onDelete: Cascade)
+  contrato  Contrato  @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+
+  @@index([devolucaoId])
+  @@map("assinatura_devolucao")
+}
+
+enum StatusFatura {
+  PENDENTE
+  PAGA
+  VENCIDA
+  CANCELADA
+}
+
+// Nova tabela de Faturas - Para faturamento mensal automático
+model Fatura {
+  id                Int           @id @default(autoincrement())
+  clienteId         Int           @map("cliente_id")
+  numeroFatura      String        @unique @map("numero_fatura") @db.VarChar(50)
+  dataEmissao       DateTime      @default(now()) @map("data_emissao")
+  dataVencimento    DateTime      @map("data_vencimento") @db.Date
+  valorTotal        Decimal       @default(0) @map("valor_total") @db.Decimal(10, 2)
+  valorPago         Decimal       @default(0) @map("valor_pago") @db.Decimal(10, 2)
+  status            StatusFatura  @default(PENDENTE)
+  dataPagamento     DateTime?     @map("data_pagamento")
+  observacoes       String?       @db.Text
+  mesReferencia     Int           @map("mes_referencia") // 1-12
+  anoReferencia     Int           @map("ano_referencia") // 2024, 2025, etc
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  cliente   Cliente          @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  contratos FaturaContrato[]
+  assinaturas AssinaturaFatura[]
+
+  @@index([clienteId])
+  @@index([status])
+  @@index([mesReferencia, anoReferencia])
+  @@map("fatura")
+}
+
+// Relacionamento N:N entre Fatura e Contrato
+model FaturaContrato {
+  id         Int      @id @default(autoincrement())
+  faturaId   Int      @map("fatura_id")
+  contratoId Int      @map("contrato_id")
+  valorContrato Decimal @default(0) @map("valor_contrato") @db.Decimal(10, 2)
+  createdAt  DateTime @default(now())
+
+  fatura   Fatura   @relation(fields: [faturaId], references: [id], onDelete: Cascade)
+  contrato Contrato @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+
+  @@unique([faturaId, contratoId])
+  @@index([faturaId])
+  @@index([contratoId])
+  @@map("fatura_contrato")
+}
+
+model AssinaturaFatura {
+  id             Int      @id @default(autoincrement())
+  faturaId       Int      @map("fatura_id")
+  nomeArquivo    String   @map("nome_arquivo") @db.VarChar(255)
+  dataCriacao    DateTime @default(now()) @map("data_criacao")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  fatura Fatura @relation(fields: [faturaId], references: [id], onDelete: Cascade)
+
+  @@index([faturaId])
+  @@map("assinatura_fatura")
+}
+
+// Tabela para tokens de assinatura (se necessário)
+model TokenAssinatura {
+  id             Int      @id @default(autoincrement())
+  token          String   @unique @db.VarChar(255)
+  contratoId     Int?     @map("contrato_id")
+  devolucaoId    Int?     @map("devolucao_id")
+  faturaId       Int?     @map("fatura_id")
+  usado          Boolean  @default(false)
+  dataExpiracao  DateTime @map("data_expiracao")
+  createdAt      DateTime @default(now())
+
+  @@index([token])
+  @@map("token_assinatura")
+}
+
+// ============================================
+// SISTEMA DE AUDITORIA E BACKUP
+// ============================================
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  VIEW
+  EXPORT
+  BACKUP
+  RESTORE
+  LOGIN
+  LOGOUT
+}
+
+enum AuditEntity {
+  CLIENTE
+  EQUIPAMENTO
+  CONTRATO
+  DEVOLUCAO
+  FATURA
+  USER
+  SYSTEM
+}
+
+// Tabela de logs de auditoria
+model AuditLog {
+  id          Int         @id @default(autoincrement())
+  userId      String?     @map("user_id")
+  userEmail   String?     @map("user_email") @db.VarChar(255)
+  action      AuditAction
+  entity      AuditEntity
+  entityId    String?     @map("entity_id") @db.VarChar(100)
+  description String      @db.Text
+  oldValue    String?     @map("old_value") @db.Text
+  newValue    String?     @map("new_value") @db.Text
+  ipAddress   String?     @map("ip_address") @db.VarChar(45)
+  userAgent   String?     @map("user_agent") @db.VarChar(500)
+  metadata    String?     @db.Text // JSON adicional
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_log")
+}
+
+// Tabela de backups
+model Backup {
+  id          Int      @id @default(autoincrement())
+  fileName    String   @map("file_name") @db.VarChar(255)
+  filePath    String?  @map("file_path") @db.VarChar(500)
+  fileSize    BigInt?  @map("file_size")
+  backupType  String   @map("backup_type") @db.VarChar(50) // "FULL", "PARTIAL", "AUTOMATIC"
+  description String?  @db.Text
+  userId      String?  @map("user_id")
+  userEmail   String?  @map("user_email") @db.VarChar(255)
+  status      String   @default("SUCCESS") @db.VarChar(50) // "SUCCESS", "FAILED", "IN_PROGRESS"
+  errorMessage String? @map("error_message") @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  expiresAt   DateTime? @map("expires_at")
+
+  @@index([userId])
+  @@index([backupType])
+  @@index([status])
+  @@index([createdAt])
+  @@map("backup")
 }

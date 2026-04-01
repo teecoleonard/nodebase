@@ -1,0 +1,3 @@
+-- AlterEnum
+ALTER TYPE "StatusContrato" ADD VALUE 'DEVOLVIDO_PARCIALMENTE';
+

@@ -1,43 +1,35 @@
-'use client';
-
-import { requireAuth } from "@/lib/auth-utils";
+import { DashboardCards } from "@/features/dashboard/components/dashboard-cards";
+import { ReceitaChart } from "@/features/dashboard/components/receita-chart";
+import { EquipamentosChart } from "@/features/dashboard/components/equipamentos-chart";
 import { caller } from "@/trpc/server";
-import { LogoutButton } from "./logout";
-import { useTRPC } from "@/trpc/client";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { requireAuth } from "@/lib/auth-utils";
 
-const Page = () => {
-  const trpc = useTRPC();
-  const { data } = useQuery(trpc.getWorkflows.queryOptions());
-
-  const testAi = useMutation(trpc.testAi.mutationOptions({
-    onSuccess: () => {
-      toast.success("AI executado com sucesso");
-    }
-  }));
-
-  const queryClient = useQueryClient();
-  const create = useMutation(trpc.createWorkflow.mutationOptions(
-    {
-      onSuccess: () => {
-        toast.success("Workflow criado com sucesso");
-      }
-    }
-  ));
+export default async function DashboardPage() {
+  await requireAuth();
+  const [resumo, receitaMensal, equipamentosChart] = await Promise.all([
+    caller.dashboard.resumo(),
+    caller.dashboard.receitaMensal(),
+    caller.dashboard.equipamentosChart(),
+  ]);
 
   return (
-    <div className="min-h-screen min-w-screen flex items-center justify-center gap-y-6 flex-col">
-      protected page
-      <div>
-      {JSON.stringify(data, null, 2)}
-      <Button disabled={testAi.isPending} onClick={() => testAi.mutate()}>Test AI</Button>
+    <div className="flex flex-col gap-8 p-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">
+            Visão geral do sistema de locação ALG
+          </p>
+        </div>
       </div>
-      <Button disabled={create.isPending} onClick={() => create.mutate()}>Create Workflow</Button>
-      <LogoutButton />
-    </div>
-  )
-};
 
-export default Page;
+      <DashboardCards data={resumo} />
+
+      {/* Gráficos */}
+      <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-7">
+        <ReceitaChart data={receitaMensal} />
+        <EquipamentosChart data={equipamentosChart} />
+      </div>
+    </div>
+  );
+}

@@ -1,11 +1,21 @@
 import { serve } from "inngest/next";
 import { inngest } from "@/inngest/client";
-import { execute } from "@/inngest/functions";
+import {
+  gerarFaturasAutomaticas,
+  alertasContratosVencendo,
+  alertasDevolucoesPendentes,
+  backupAutomatico,
+  rotacaoLogsAuditoria,
+} from "@/inngest/functions";
 
-// Create an API that serves zero functions
 export const { GET, POST, PUT } = serve({
   client: inngest,
   functions: [
-    execute,
+    gerarFaturasAutomaticas,
+    alertasContratosVencendo,
+    alertasDevolucoesPendentes,
+    backupAutomatico,
+    rotacaoLogsAuditoria,
   ],
 });
+

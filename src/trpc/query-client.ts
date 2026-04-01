@@ -7,7 +7,11 @@ import {
     return new QueryClient({
       defaultOptions: {
         queries: {
-          staleTime: 30 * 1000,
+          staleTime: 60 * 1000, // 1 minuto - dados permanecem frescos
+          gcTime: 5 * 60 * 1000, // 5 minutos - tempo de garbage collection
+          refetchOnWindowFocus: false, // Não refaz query ao focar janela
+          refetchOnMount: false, // Não refaz query ao montar componente se dados estão frescos
+          retry: 1, // Apenas 1 tentativa em caso de erro
         },
         dehydrate: {
           // serializeData: superjson.serialize,
